@@ -1,0 +1,1047 @@
+{
+  "info": {
+    "_postman_id": "streamtune-collection-v1",
+    "name": "StreamTune API",
+    "description": "Colección completa de la API de StreamTune.\n\n**Cómo usar:**\n1. Importa también el archivo `StreamTune.postman_environment.json`\n2. Selecciona el environment `StreamTune - Local`\n3. Ejecuta primero `POST /auth/login` — el token se guarda automáticamente\n4. A partir de ahí todos los endpoints autenticados funcionan sin configuración extra\n\n**Variables de environment usadas:**\n- `baseUrl` → http://localhost:3000/api\n- `wsUrl`   → ws://localhost:3000\n- `accessToken` → se llena automáticamente al hacer login\n- `channelSlug` → slug del canal activo para pruebas\n- `videoId` → id del último video creado\n- `channelId` → id del último canal creado",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [],
+  "item": [
+
+    {
+      "name": "🔐 Auth",
+      "item": [
+
+        {
+          "name": "Register – Viewer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('accessToken',  body.accessToken);",
+                  "  pm.environment.set('refreshToken', body.refreshToken);",
+                  "  pm.environment.set('userId',       body.user.id);",
+                  "  pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "  pm.test('Tiene accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\":    \"nuevo_viewer\",\n  \"email\":       \"viewer_nuevo@test.com\",\n  \"password\":    \"Viewer1234!\",\n  \"displayName\": \"Nuevo Viewer\",\n  \"country\":     \"MX\",\n  \"role\":        \"viewer\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/auth/register","host":["{{baseUrl}}"],"path":["auth","register"]}
+          }
+        },
+
+        {
+          "name": "Register – Creator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('accessToken',  body.accessToken);",
+                  "  pm.environment.set('refreshToken', body.refreshToken);",
+                  "  pm.environment.set('userId',       body.user.id);",
+                  "  pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\":    \"mi_canal_music\",\n  \"email\":       \"creator_nuevo@test.com\",\n  \"password\":    \"Creator1234!\",\n  \"displayName\": \"Mi Canal Music\",\n  \"country\":     \"MX\",\n  \"role\":        \"creator\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/auth/register","host":["{{baseUrl}}"],"path":["auth","register"]}
+          }
+        },
+
+        {
+          "name": "Login – Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('accessToken',  body.accessToken);",
+                  "  pm.environment.set('refreshToken', body.refreshToken);",
+                  "  pm.environment.set('userId',       body.user.id);",
+                  "  pm.test('Status 200',       () => pm.response.to.have.status(200));",
+                  "  pm.test('Tiene token',      () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "  pm.test('Role es admin',    () => pm.expect(body.user.role).to.eql('admin'));",
+                  "  console.log('✅ Token guardado en environment');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\":    \"admin@streamtune.app\",\n  \"password\": \"Admin1234!\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]},
+            "description": "Credenciales del usuario admin creado por el seed.\nEl accessToken se guarda automáticamente en el environment."
+          }
+        },
+
+        {
+          "name": "Login – Creator (Lo-Fi Room)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('accessToken',  body.accessToken);",
+                  "  pm.environment.set('refreshToken', body.refreshToken);",
+                  "  pm.environment.set('userId',       body.user.id);",
+                  "  pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\":    \"lofi@streamtune.app\",\n  \"password\": \"Creator123!\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]}
+          }
+        },
+
+        {
+          "name": "Login – Viewer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('accessToken',  body.accessToken);",
+                  "  pm.environment.set('refreshToken', body.refreshToken);",
+                  "  pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\":    \"viewer@streamtune.app\",\n  \"password\": \"Viewer123!\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]}
+          }
+        },
+
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('accessToken', body.accessToken);",
+                  "  pm.test('Nuevo accessToken recibido', () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/auth/refresh","host":["{{baseUrl}}"],"path":["auth","refresh"]}
+          }
+        },
+
+        {
+          "name": "GET Mi Perfil (/me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',         () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene username',      () => pm.expect(pm.response.json().username).to.be.a('string'));",
+                  "pm.test('No tiene password',   () => pm.expect(pm.response.json().passwordHash).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{accessToken}}"}],
+            "url": {"raw":"{{baseUrl}}/auth/me","host":["{{baseUrl}}"],"path":["auth","me"]}
+          }
+        },
+
+        {
+          "name": "GET Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',     () => pm.response.to.have.status(200));",
+                  "pm.test('Status ok',      () => pm.expect(pm.response.json().status).to.eql('ok'));",
+                  "pm.test('Tiempo < 200ms', () => pm.expect(pm.response.responseTime).to.be.below(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {"raw":"{{baseUrl}}/health","host":["{{baseUrl}}"],"path":["health"]}
+          }
+        },
+
+        {
+          "name": "❌ Login Inválido (debe dar 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401',          () => pm.response.to.have.status(401));",
+                  "pm.test('Mensaje de error',     () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\":    \"noexiste@test.com\",\n  \"password\": \"wrongpassword\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]}
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "📡 Channels",
+      "item": [
+
+        {
+          "name": "GET Todos los Canales",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',          () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene array channels', () => pm.expect(pm.response.json().channels).to.be.an('array'));",
+                  "if (pm.response.json().channels.length > 0) {",
+                  "  const first = pm.response.json().channels[0];",
+                  "  pm.environment.set('channelSlug', first.slug);",
+                  "  pm.environment.set('channelId',   first.id);",
+                  "  console.log('channelSlug guardado:', first.slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/channels?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels"],
+              "query": [
+                {"key":"limit","value":"20"},
+                {"key":"offset","value":"0"},
+                {"key":"status","value":"live","disabled":true},
+                {"key":"topic","value":"Lo-Fi","disabled":true}
+              ]
+            },
+            "description": "Lista todos los canales. Parámetros opcionales:\n- `status` → live | paused | offline\n- `topic`  → filtra por categoría\n- `limit`  → máximo de resultados (default 20)\n- `offset` → paginación"
+          }
+        },
+
+        {
+          "name": "GET Canal por Slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',         () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene channel',       () => pm.expect(pm.response.json().channel).to.be.an('object'));",
+                  "pm.test('Tiene liveState',     () => pm.expect(pm.response.json()).to.have.property('liveState'));",
+                  "pm.test('Tiene viewers',       () => pm.expect(pm.response.json().viewers).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {"raw":"{{baseUrl}}/channels/{{channelSlug}}","host":["{{baseUrl}}"],"path":["channels","{{channelSlug}}"]}
+          }
+        },
+
+        {
+          "name": "GET Canales EN VIVO",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/channels?status=live",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels"],
+              "query": [{"key":"status","value":"live"}]
+            }
+          }
+        },
+
+        {
+          "name": "GET Canales por Tema (Lo-Fi)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/channels?topic=Lo-Fi",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels"],
+              "query": [{"key":"topic","value":"Lo-Fi"}]
+            }
+          }
+        },
+
+        {
+          "name": "POST Crear Canal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('channelSlug', body.slug);",
+                  "  pm.environment.set('channelId',   body.id);",
+                  "  pm.test('Status 201',       () => pm.response.to.have.status(201));",
+                  "  pm.test('Slug correcto',    () => pm.expect(body.slug).to.eql('mi-canal-test'));",
+                  "  console.log('Canal creado, slug guardado:', body.slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\":        \"mi-canal-test\",\n  \"name\":        \"Mi Canal de Prueba\",\n  \"description\": \"Canal de prueba con música variada\",\n  \"descLong\":    \"Descripción larga del canal para mostrar más detalles a los visitantes.\",\n  \"icon\":        \"🎵\",\n  \"accentColor\": \"#7c5cfc\",\n  \"topics\":      [\"Lo-Fi\", \"Instrumental\"],\n  \"timezone\":    \"America/Mexico_City\",\n  \"plan\":        \"free\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/channels","host":["{{baseUrl}}"],"path":["channels"]},
+            "description": "Requiere rol `creator` o `admin`.\nEl slug debe ser único — se usa en la URL del canal.\nEjemplo: slug `mi-canal-lofi` → ws://host/ws/mi-canal-lofi"
+          }
+        },
+
+        {
+          "name": "PATCH Actualizar Canal",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\":        \"Mi Canal Actualizado\",\n  \"description\": \"Nueva descripción del canal\",\n  \"icon\":        \"🎸\",\n  \"accentColor\": \"#c45cfc\",\n  \"topics\":      [\"Rock\", \"80s & 90s\"]\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/channels/{{channelSlug}}","host":["{{baseUrl}}"],"path":["channels","{{channelSlug}}"]}
+          }
+        },
+
+        {
+          "name": "PATCH Canal → EN VIVO 🔴",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',    () => pm.response.to.have.status(200));",
+                  "pm.test('Status es live',() => pm.expect(pm.response.json().status).to.eql('live'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"live\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/channels/{{channelSlug}}/status","host":["{{baseUrl}}"],"path":["channels","{{channelSlug}}","status"]},
+            "description": "Valores válidos: `live` | `paused` | `offline`\nCuando cambia a `live` se notifica a todos los viewers via WebSocket."
+          }
+        },
+
+        {
+          "name": "PATCH Canal → PAUSADO ⏸",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {"mode":"raw","raw":"{\n  \"status\": \"paused\"\n}"},
+            "url": {"raw":"{{baseUrl}}/channels/{{channelSlug}}/status","host":["{{baseUrl}}"],"path":["channels","{{channelSlug}}","status"]}
+          }
+        },
+
+        {
+          "name": "PATCH Canal → OFFLINE ⚫",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {"mode":"raw","raw":"{\n  \"status\": \"offline\"\n}"},
+            "url": {"raw":"{{baseUrl}}/channels/{{channelSlug}}/status","host":["{{baseUrl}}"],"path":["channels","{{channelSlug}}","status"]}
+          }
+        },
+
+        {
+          "name": "DELETE Eliminar Canal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{"key":"Authorization","value":"Bearer {{accessToken}}"}],
+            "url": {"raw":"{{baseUrl}}/channels/{{channelSlug}}","host":["{{baseUrl}}"],"path":["channels","{{channelSlug}}"]},
+            "description": "⚠️ Acción irreversible. Solo el dueño del canal o un admin pueden eliminar."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "📅 Schedules (Programación)",
+      "item": [
+
+        {
+          "name": "GET Programación – Lunes (0=Dom, 1=Lun)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',       () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene videos',      () => pm.expect(pm.response.json().videos).to.be.an('array'));",
+                  "const body = pm.response.json();",
+                  "if (body.videos.length > 0) {",
+                  "  pm.environment.set('videoId', body.videos[0].id);",
+                  "  console.log('videoId guardado:', body.videos[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/schedules/{{channelSlug}}/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedules","{{channelSlug}}","1"]
+            },
+            "description": "Días de la semana:\n0 = Domingo\n1 = Lunes\n2 = Martes\n3 = Miércoles\n4 = Jueves\n5 = Viernes\n6 = Sábado"
+          }
+        },
+
+        {
+          "name": "GET Programación – Hoy",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Calcula el día actual automáticamente",
+                  "const dow = new Date().getDay();",
+                  "pm.environment.set('todayDow', dow);",
+                  "console.log('Día actual (0=Dom):', dow);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Total duration en segundos', () => pm.expect(body.totalDuration).to.be.a('number'));",
+                  "console.log('Videos hoy:', body.videos.length, '| Duración total:', body.totalDuration, 's');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/schedules/{{channelSlug}}/{{todayDow}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedules","{{channelSlug}}","{{todayDow}}"]
+            }
+          }
+        },
+
+        {
+          "name": "POST Agregar Video de YouTube",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('videoId', body.video.id);",
+                  "  pm.test('Status 201',      () => pm.response.to.have.status(201));",
+                  "  pm.test('Video creado',    () => pm.expect(body.video.id).to.be.a('string'));",
+                  "  pm.test('Tiene ytId',      () => pm.expect(body.video.ytId).to.be.a('string'));",
+                  "  console.log('Video agregado, ID:', body.video.id, '| ytId:', body.video.ytId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\":      \"https://www.youtube.com/watch?v=jfKfPfyJRdk\",\n  \"dow\":      1,\n  \"position\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/schedules/{{channelSlug}}/add-youtube",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedules","{{channelSlug}}","add-youtube"]
+            },
+            "description": "Extrae automáticamente el videoId de cualquier formato de URL de YouTube:\n- youtube.com/watch?v=XXXX\n- youtu.be/XXXX\n- youtube.com/shorts/XXXX\n- youtube.com/embed/XXXX\n\n`dow` = día de la semana donde agregar (opcional)\n`position` = posición en la lista (opcional, default = al final)"
+          }
+        },
+
+        {
+          "name": "POST Agregar Video – youtu.be (short URL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://youtu.be/djV11Xbc914\",\n  \"dow\": 1\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/schedules/{{channelSlug}}/add-youtube","host":["{{baseUrl}}"],"path":["schedules","{{channelSlug}}","add-youtube"]}
+          }
+        },
+
+        {
+          "name": "PUT Reemplazar Programación del Día",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Asegúrate de tener videoId válidos en el environment",
+                  "const vid = pm.environment.get('videoId');",
+                  "if (!vid) console.warn('⚠️  videoId no está en el environment. Ejecuta primero POST add-youtube');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene videoIds', () => pm.expect(pm.response.json().videoIds).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"videoIds\":     [\"{{videoId}}\"],\n  \"shuffle\":      false,\n  \"loop\":         true,\n  \"crossfadeSec\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/schedules/{{channelSlug}}/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedules","{{channelSlug}}","1"]
+            },
+            "description": "Reemplaza TODA la programación de un día.\nEl orden del array `videoIds` define el orden de reproducción.\n`shuffle: true` → orden aleatorio (determinístico por día, todos ven el mismo)\n`crossfadeSec` → segundos de crossfade entre videos (0-10)"
+          }
+        },
+
+        {
+          "name": "POST Copiar Programación a Toda la Semana",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',     () => pm.response.to.have.status(200));",
+                  "pm.test('Copied = 6',     () => pm.expect(pm.response.json().copied).to.eql(6));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceDow\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/schedules/{{channelSlug}}/copy-to-week",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedules","{{channelSlug}}","copy-to-week"]
+            },
+            "description": "Copia la programación de un día a los otros 6 días de la semana.\n`sourceDow` = día fuente (0=Dom … 6=Sáb)"
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "🎬 Videos (Biblioteca)",
+      "item": [
+
+        {
+          "name": "GET Biblioteca del Canal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',    () => pm.response.to.have.status(200));",
+                  "pm.test('Es array',      () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "const videos = pm.response.json();",
+                  "if (videos.length > 0) {",
+                  "  pm.environment.set('videoId', videos[0].id);",
+                  "  console.log('Videos en biblioteca:', videos.length);",
+                  "  console.log('Primer video:', videos[0].title, '|', videos[0].durationSec, 's');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/videos/{{channelSlug}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["videos","{{channelSlug}}"]
+            }
+          }
+        },
+
+        {
+          "name": "PATCH Renombrar Video",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mi título personalizado para este video\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/videos/{{videoId}}","host":["{{baseUrl}}"],"path":["videos","{{videoId}}"]}
+          }
+        },
+
+        {
+          "name": "DELETE Quitar Video de Biblioteca",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{"key":"Authorization","value":"Bearer {{accessToken}}"}],
+            "url": {"raw":"{{baseUrl}}/videos/{{videoId}}","host":["{{baseUrl}}"],"path":["videos","{{videoId}}"]},
+            "description": "Soft-delete: marca el video como inactivo. No lo borra de la BD ni del schedule."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "✦ Créditos",
+      "item": [
+
+        {
+          "name": "GET Paquetes Disponibles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',  () => pm.response.to.have.status(200));",
+                  "pm.test('6 paquetes', () => pm.expect(pm.response.json()).to.have.lengthOf(6));",
+                  "const packs = pm.response.json();",
+                  "packs.forEach(p => console.log(p.id, '→', p.credits, 'cr | $', p.usdCents/100));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {"raw":"{{baseUrl}}/credits/packs","host":["{{baseUrl}}"],"path":["credits","packs"]}
+          }
+        },
+
+        {
+          "name": "POST Comprar Créditos (Dev – sin Stripe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.test('Status 200',       () => pm.response.to.have.status(200));",
+                  "  pm.test('Success = true',   () => pm.expect(body.success).to.be.true);",
+                  "  pm.test('Tiene newBalance', () => pm.expect(body.newBalance).to.be.a('number'));",
+                  "  console.log('Nuevo balance:', body.newBalance, 'créditos');",
+                  "  if (body.dev) console.log('⚠️  Modo DEV: créditos otorgados sin Stripe');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packId\": \"pack_1200\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/credits/purchase","host":["{{baseUrl}}"],"path":["credits","purchase"]},
+            "description": "En modo desarrollo (sin STRIPE_SECRET_KEY en .env) los créditos se otorgan directamente.\nEn producción retorna `clientSecret` para confirmar el pago en el frontend con Stripe.js.\n\nPaquetes válidos:\n- pack_100   → 100 cr  / $1.00\n- pack_500   → 500 cr  / $4.50\n- pack_1200  → 1200 cr / $9.00  ⭐ Popular\n- pack_3000  → 3000 cr / $20.00\n- pack_7000  → 7000 cr / $40.00\n- pack_15000 → 15000 cr/ $75.00"
+          }
+        },
+
+        {
+          "name": "POST Comprar Créditos (Pack 500)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {"mode":"raw","raw":"{\n  \"packId\": \"pack_500\"\n}"},
+            "url": {"raw":"{{baseUrl}}/credits/purchase","host":["{{baseUrl}}"],"path":["credits","purchase"]}
+          }
+        },
+
+        {
+          "name": "POST Premiar Canal (Reward)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.test('Status 200',       () => pm.response.to.have.status(200));",
+                  "  pm.test('Success = true',   () => pm.expect(body.success).to.be.true);",
+                  "  pm.test('Tiene newBalance', () => pm.expect(body.newBalance).to.be.a('number'));",
+                  "  console.log('Balance restante:', body.newBalance, 'créditos');",
+                  "}",
+                  "if (pm.response.code === 402) {",
+                  "  console.warn('Sin créditos suficientes. Compra primero con POST /credits/purchase');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelId\": \"{{channelId}}\",\n  \"amount\":    100,\n  \"message\":   \"¡Excelente selección musical! 🎵\"\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/credits/reward","host":["{{baseUrl}}"],"path":["credits","reward"]},
+            "description": "Transfiere créditos al canal.\n70% va al dueño del canal, 30% a la plataforma.\nSe transmite una notificación de reward a todos los viewers via WebSocket."
+          }
+        },
+
+        {
+          "name": "GET Historial de Transacciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Es array',   () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "console.log('Transacciones:', pm.response.json().length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{accessToken}}"}],
+            "url": {"raw":"{{baseUrl}}/credits/history","host":["{{baseUrl}}"],"path":["credits","history"]}
+          }
+        },
+
+        {
+          "name": "❌ Reward sin Créditos (debe dar 402)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 402 o 200', () => {",
+                  "  pm.expect([200, 402]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelId\": \"{{channelId}}\",\n  \"amount\":    999999\n}"
+            },
+            "url": {"raw":"{{baseUrl}}/credits/reward","host":["{{baseUrl}}"],"path":["credits","reward"]}
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "🛡️ Admin",
+      "item": [
+
+        {
+          "name": "GET Stats Globales",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',           () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene totalUsers',      () => pm.expect(pm.response.json().totalUsers).to.be.a('number'));",
+                  "pm.test('Tiene liveChannels',    () => pm.expect(pm.response.json().liveChannels).to.be.a('number'));",
+                  "const s = pm.response.json();",
+                  "console.log('Users:', s.totalUsers, '| Canales live:', s.liveChannels, '| Créditos vendidos:', s.totalCreditsSold);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{accessToken}}"}],
+            "url": {"raw":"{{baseUrl}}/admin/stats","host":["{{baseUrl}}"],"path":["admin","stats"]},
+            "description": "Solo accesible con rol `admin`."
+          }
+        },
+
+        {
+          "name": "GET Lista de Usuarios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200',        () => pm.response.to.have.status(200));",
+                  "pm.test('Es array',           () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "pm.test('Sin passwordHash',   () => pm.response.json().forEach(u => pm.expect(u.passwordHash).to.be.undefined));",
+                  "console.log('Total usuarios:', pm.response.json().length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{accessToken}}"}],
+            "url": {"raw":"{{baseUrl}}/admin/users","host":["{{baseUrl}}"],"path":["admin","users"]}
+          }
+        },
+
+        {
+          "name": "PATCH Cambiar Rol de Usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key":"Content-Type","value":"application/json"},
+              {"key":"Authorization","value":"Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"creator\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin","users","{{userId}}","role"]
+            },
+            "description": "Roles válidos: `viewer` | `creator` | `admin`"
+          }
+        },
+
+        {
+          "name": "DELETE Canal (Admin Force)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{"key":"Authorization","value":"Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/admin/channels/{{channelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin","channels","{{channelId}}"]
+            },
+            "description": "Un admin puede eliminar cualquier canal. Se notifica a los viewers via WebSocket antes de cerrar."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "🔌 WebSocket (Referencia)",
+      "item": [
+        {
+          "name": "WS – Conectar como Viewer (Guest)",
+          "request": {
+            "method": "GET",
+            "url": {"raw":"{{wsUrl}}/ws/{{channelSlug}}","host":["{{wsUrl}}"],"path":["ws","{{channelSlug}}"]},
+            "description": "⚠️ WebSocket no se puede probar directamente en Postman HTTP.\nUsa la pestaña de WebSocket de Postman (New → WebSocket Request).\n\n**URL para conectar:**\n```\nws://localhost:3000/ws/lofi-study-room\n```\n\n**Con autenticación:**\n```\nws://localhost:3000/ws/lofi-study-room?token={{accessToken}}\n```\n\n**Mensajes que recibirás automáticamente:**\n```json\n// Sincronización (cada 1 segundo)\n{ \"type\": \"sync\", \"ytId\": \"jfKfPfyJRdk\", \"frameAt\": 142, \"totalDuration\": 202, \"viewers\": 3241 }\n\n// Chat de otro usuario\n{ \"type\": \"chat\", \"username\": \"lofi_fan\", \"body\": \"gran música!\", \"createdAt\": \"...\" }\n\n// Reward\n{ \"type\": \"reward\", \"username\": \"fan123\", \"amount\": 100 }\n\n// Sistema\n{ \"type\": \"system\", \"body\": \"🔴 El canal está EN VIVO\" }\n\n// Ping (responde con pong)\n{ \"type\": \"ping\" }\n```\n\n**Mensajes que puedes enviar:**\n```json\n// Enviar mensaje al chat\n{ \"type\": \"chat\", \"body\": \"¡Buena música!\" }\n\n// Responder ping\n{ \"type\": \"pong\" }\n\n// Notificar reward (el monto real se procesa via REST /credits/reward)\n{ \"type\": \"reward\", \"amount\": 50 }\n```"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🧪 Flujos Completos (Scenarios)",
+      "item": [
+
+        {
+          "name": "1️⃣ Flujo Creator Completo",
+          "item": [
+            {"name":"Step 1 – Login Creator",    "request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"email\":    \"lofi@streamtune.app\",\n  \"password\": \"Creator123!\"\n}"},"url":{"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]}},"event":[{"listen":"test","script":{"exec":["const b=pm.response.json();pm.environment.set('accessToken',b.accessToken);pm.test('Login OK',()=>pm.response.to.have.status(200));"]}}]},
+            {"name":"Step 2 – Ver mi perfil",   "request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/auth/me","host":["{{baseUrl}}"],"path":["auth","me"]}}},
+            {"name":"Step 3 – Ver mis canales", "request":{"method":"GET","url":{"raw":"{{baseUrl}}/channels?status=live","host":["{{baseUrl}}"],"path":["channels"],"query":[{"key":"status","value":"live"}]}},"event":[{"listen":"test","script":{"exec":["const chs=pm.response.json().channels;if(chs.length){pm.environment.set('channelSlug',chs[0].slug);pm.environment.set('channelId',chs[0].id);}"]}}]},
+            {"name":"Step 4 – Ver programación de hoy","event":[{"listen":"prerequest","script":{"exec":["pm.environment.set('todayDow',new Date().getDay());"]}}],"request":{"method":"GET","url":{"raw":"{{baseUrl}}/schedules/{{channelSlug}}/{{todayDow}}","host":["{{baseUrl}}"],"path":["schedules","{{channelSlug}}","{{todayDow}}"]}}},
+            {"name":"Step 5 – Poner canal EN VIVO","request":{"method":"PATCH","header":[{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessToken}}"}],"body":{"mode":"raw","raw":"{\n  \"status\": \"live\"\n}"},"url":{"raw":"{{baseUrl}}/channels/{{channelSlug}}/status","host":["{{baseUrl}}"],"path":["channels","{{channelSlug}}","status"]}}}
+          ]
+        },
+
+        {
+          "name": "2️⃣ Flujo Viewer Completo",
+          "item": [
+            {"name":"Step 1 – Login Viewer","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"email\":    \"viewer@streamtune.app\",\n  \"password\": \"Viewer123!\"\n}"},"url":{"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]}},"event":[{"listen":"test","script":{"exec":["const b=pm.response.json();pm.environment.set('accessToken',b.accessToken);pm.test('Login OK',()=>pm.response.to.have.status(200));"]}}]},
+            {"name":"Step 2 – Ver canales disponibles","request":{"method":"GET","url":{"raw":"{{baseUrl}}/channels","host":["{{baseUrl}}"],"path":["channels"]}},"event":[{"listen":"test","script":{"exec":["const chs=pm.response.json().channels;if(chs.length){pm.environment.set('channelSlug',chs[0].slug);pm.environment.set('channelId',chs[0].id);}"]}}]},
+            {"name":"Step 3 – Comprar créditos","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessToken}}"}],"body":{"mode":"raw","raw":"{\n  \"packId\": \"pack_500\"\n}"},"url":{"raw":"{{baseUrl}}/credits/purchase","host":["{{baseUrl}}"],"path":["credits","purchase"]}}},
+            {"name":"Step 4 – Premiar canal","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessToken}}"}],"body":{"mode":"raw","raw":"{\n  \"channelId\": \"{{channelId}}\",\n  \"amount\":    50,\n  \"message\":   \"¡Excelente canal!\"\n}"},"url":{"raw":"{{baseUrl}}/credits/reward","host":["{{baseUrl}}"],"path":["credits","reward"]}}},
+            {"name":"Step 5 – Ver historial","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/credits/history","host":["{{baseUrl}}"],"path":["credits","history"]}}}
+          ]
+        }
+
+      ]
+    }
+
+  ]
+}

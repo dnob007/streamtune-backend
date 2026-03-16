@@ -1,0 +1,267 @@
+// StreamTune – Prisma Schema (PostgreSQL)
+// npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ══════════════════════════════════
+//  USUARIOS
+// ══════════════════════════════════
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String    @unique
+  passwordHash  String
+  displayName   String
+  country       String?
+  avatarUrl     String?
+  role          UserRole  @default(VIEWER)
+  emailVerified Boolean   @default(false)
+  credits       Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  channels      Channel[]
+  creditTxns    CreditTransaction[]
+  chatMessages  ChatMessage[]
+  follows       Follow[]            @relation("Follower")
+  followers     Follow[]            @relation("Following")
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@index([username])
+}
+
+enum UserRole {
+  GUEST
+  VIEWER
+  CREATOR
+  ADMIN
+}
+
+// ══════════════════════════════════
+//  CANALES
+// ══════════════════════════════════
+model Channel {
+  id           String        @id @default(uuid())
+  slug         String        @unique
+  name         String
+  description  String?
+  shortDesc    String?       @db.VarChar(120)
+  icon         String        @default("🎵")
+  accentColor  String        @default("#7c5cfc")
+  status       ChannelStatus @default(PAUSED)
+  plan         ChannelPlan   @default(FREE)
+  storageUsed  BigInt        @default(0)
+  storageLimit BigInt        @default(0)
+  timezone     String        @default("America/Mexico_City")
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  topics       ChannelTopic[]
+  playlists    Playlist[]
+  videos       ChannelVideo[]
+  chatMessages ChatMessage[]
+  follows      Follow[]
+  creditTxns   CreditTransaction[]
+
+  @@index([slug])
+  @@index([ownerId])
+  @@index([status])
+}
+
+enum ChannelStatus {
+  LIVE
+  PAUSED
+  BANNED
+}
+
+enum ChannelPlan {
+  FREE
+  CREATOR
+  PRO
+}
+
+// ══════════════════════════════════
+//  TEMAS
+// ══════════════════════════════════
+model Topic {
+  id       String         @id @default(uuid())
+  slug     String         @unique
+  name     String
+  channels ChannelTopic[]
+}
+
+model ChannelTopic {
+  channelId String
+  topicId   String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  topic     Topic   @relation(fields: [topicId], references: [id])
+
+  @@id([channelId, topicId])
+}
+
+// ══════════════════════════════════
+//  VIDEOS
+// ══════════════════════════════════
+model ChannelVideo {
+  id          String      @id @default(uuid())
+  channelId   String
+  channel     Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  source      VideoSource
+  ytVideoId   String?
+  ytTitle     String?
+  ytDuration  Int?
+  ytThumbnail String?
+  fileKey     String?
+  fileName    String?
+  fileSizeB   BigInt?
+  duration    Int
+  title       String
+  artist      String?
+  createdAt   DateTime    @default(now())
+
+  playlistItems PlaylistItem[]
+
+  @@index([channelId])
+  @@index([ytVideoId])
+}
+
+enum VideoSource {
+  YOUTUBE
+  UPLOAD
+}
+
+// ══════════════════════════════════
+//  PLAYLISTS DIARIAS
+// ══════════════════════════════════
+model Playlist {
+  id        String         @id @default(uuid())
+  channelId String
+  channel   Channel        @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  dayOfWeek Int?           // 0=Dom … 6=Sáb, null = lista única
+  name      String?
+  shuffle   Boolean        @default(false)
+  repeat    Boolean        @default(true)
+  active    Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  items     PlaylistItem[]
+
+  @@unique([channelId, dayOfWeek])
+  @@index([channelId])
+}
+
+model PlaylistItem {
+  id         String       @id @default(uuid())
+  playlistId String
+  playlist   Playlist     @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  videoId    String
+  video      ChannelVideo @relation(fields: [videoId], references: [id])
+  position   Int
+  startSec   Int          @default(0)
+
+  @@unique([playlistId, position])
+  @@index([playlistId])
+}
+
+// ══════════════════════════════════
+//  CHAT
+// ══════════════════════════════════
+model ChatMessage {
+  id        String      @id @default(uuid())
+  channelId String
+  channel   Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  message   String      @db.VarChar(500)
+  type      MessageType @default(TEXT)
+  createdAt DateTime    @default(now())
+
+  @@index([channelId, createdAt])
+}
+
+enum MessageType {
+  TEXT
+  CREDIT_REWARD
+  SYSTEM
+}
+
+// ══════════════════════════════════
+//  CREDITOS
+// ══════════════════════════════════
+model CreditTransaction {
+  id           String       @id @default(uuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  type         CreditTxType
+  amount       Int
+  balanceAfter Int
+  channelId    String?
+  channel      Channel?     @relation(fields: [channelId], references: [id])
+  stripePayId  String?
+  creditPackId String?
+  note         String?
+  createdAt    DateTime     @default(now())
+
+  @@index([userId, createdAt])
+  @@index([channelId])
+}
+
+enum CreditTxType {
+  PURCHASE
+  REWARD_SENT
+  REWARD_RECEIVED
+  PAYOUT
+  REFUND
+  ADJUSTMENT
+}
+
+model CreditPack {
+  id        String   @id @default(uuid())
+  credits   Int
+  priceUSD  Float
+  bonusPct  Int      @default(0)
+  active    Boolean  @default(true)
+  popular   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ══════════════════════════════════
+//  SEGUIDORES
+// ══════════════════════════════════
+model Follow {
+  followerId  String
+  channelId   String
+  follower    User     @relation("Follower",  fields: [followerId], references: [id])
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  followingId String?
+  following   User?    @relation("Following", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, channelId])
+  @@index([channelId])
+}
+
+// ══════════════════════════════════
+//  AUTH
+// ══════════════════════════════════
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
