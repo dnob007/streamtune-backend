@@ -4,11 +4,9 @@ const { sequelize, User, Channel, Video, DailySchedule } = require('../models');
 const { hashPassword } = require('../services/auth');
 
 async function seed() {
-  // force: true borra y recrea todas las tablas
   await sequelize.sync({ force: true });
-  console.log('Tablas creadas en SQLite');
+  console.log('Tablas creadas');
 
-  // ── Usuarios ──────────────────────────────────────────
   const admin = await User.create({
     username: 'admin', email: 'admin@streamtune.app',
     passwordHash: await hashPassword('Admin1234!'),
@@ -35,13 +33,11 @@ async function seed() {
 
   console.log('Usuarios creados');
 
-  // ── Canales ───────────────────────────────────────────
   const lofiCh = await Channel.create({
     ownerId: creator1.id, slug: 'lofi-study-room',
     name: 'Lo-Fi Study Room', icon: '☕',
     accentColor: '#5cf8c8',
     description: 'Beats relajantes para estudiar 24/7.',
-    // topics se serializa automáticamente a JSON por el setter
     topics: ['Lo-Fi', 'Instrumental'],
     status: 'live', plan: 'creator',
     timezone: 'America/Mexico_City',
@@ -59,45 +55,34 @@ async function seed() {
 
   console.log('Canales creados');
 
-  // ── Videos ────────────────────────────────────────────
   const lofiVideos = await Video.bulkCreate([
-    { channelId: lofiCh.id,  source: 'youtube', ytId: 'jfKfPfyJRdk', ytTitle: 'lo-fi hip hop radio',        ytChannel: 'Lofi Girl',     ytDuration: 3600, ytEmbeddable: true, title: 'lo-fi beat 047' },
-    { channelId: lofiCh.id,  source: 'youtube', ytId: '5qap5aO4i9A', ytTitle: 'lofi beats to chill/study',  ytChannel: 'Lofi Girl',     ytDuration: 3600, ytEmbeddable: true, title: 'Chill Beats Vol.2' },
-    { channelId: lofiCh.id,  source: 'youtube', ytId: 'DWcJFNfaw9c', ytTitle: 'lofi study beats',           ytChannel: 'College Music', ytDuration: 3600, ytEmbeddable: true, title: 'Study Session Mix' },
+    { channelId: lofiCh.id,  source: 'youtube', ytId: 'jfKfPfyJRdk', ytTitle: 'lo-fi hip hop radio',       ytChannel: 'Lofi Girl',     ytDuration: 3600, ytEmbeddable: true, title: 'lo-fi beat 047'    },
+    { channelId: lofiCh.id,  source: 'youtube', ytId: '5qap5aO4i9A', ytTitle: 'lofi beats to chill/study', ytChannel: 'Lofi Girl',     ytDuration: 3600, ytEmbeddable: true, title: 'Chill Beats Vol.2' },
+    { channelId: lofiCh.id,  source: 'youtube', ytId: 'DWcJFNfaw9c', ytTitle: 'lofi study beats',          ytChannel: 'College Music', ytDuration: 3600, ytEmbeddable: true, title: 'Study Session Mix'  },
   ]);
 
   const retroVideos = await Video.bulkCreate([
-    { channelId: retroCh.id, source: 'youtube', ytId: 'djV11Xbc914', ytTitle: 'Take On Me',          ytChannel: 'a-ha',    ytDuration: 228,  ytEmbeddable: true },
-    { channelId: retroCh.id, source: 'youtube', ytId: 'FTQbiNvZqaY', ytTitle: 'Africa',              ytChannel: 'Toto',    ytDuration: 295,  ytEmbeddable: true },
-    { channelId: retroCh.id, source: 'youtube', ytId: 'fJ9rUzIMcZQ', ytTitle: 'Bohemian Rhapsody',   ytChannel: 'Queen',   ytDuration: 355,  ytEmbeddable: true },
-    { channelId: retroCh.id, source: 'youtube', ytId: '1w7OgIMMRc4', ytTitle: "Don't Stop Believin", ytChannel: 'Journey', ytDuration: 251,  ytEmbeddable: true },
+    { channelId: retroCh.id, source: 'youtube', ytId: 'djV11Xbc914', ytTitle: 'Take On Me',         ytChannel: 'a-ha',    ytDuration: 228, ytEmbeddable: true },
+    { channelId: retroCh.id, source: 'youtube', ytId: 'FTQbiNvZqaY', ytTitle: 'Africa',             ytChannel: 'Toto',    ytDuration: 295, ytEmbeddable: true },
+    { channelId: retroCh.id, source: 'youtube', ytId: 'fJ9rUzIMcZQ', ytTitle: 'Bohemian Rhapsody',  ytChannel: 'Queen',   ytDuration: 355, ytEmbeddable: true },
+    { channelId: retroCh.id, source: 'youtube', ytId: '1w7OgIMMRc4', ytTitle: "Don't Stop Believin", ytChannel: 'Journey', ytDuration: 251, ytEmbeddable: true },
   ]);
 
   console.log('Videos creados');
 
-  // ── Schedules (misma lista para los 7 días) ───────────
-  const lofiIds  = lofiVideos.map(v => v.id);
-  const retroIds = retroVideos.map(v => v.id);
-
   for (let d = 0; d < 7; d++) {
-    await DailySchedule.create({
-      channelId: lofiCh.id,  dayOfWeek: d,
-      videoIds: lofiIds,     loop: true,
-    });
-    await DailySchedule.create({
-      channelId: retroCh.id, dayOfWeek: d,
-      videoIds: retroIds,    loop: true,
-    });
+    await DailySchedule.create({ channelId: lofiCh.id,  dayOfWeek: d, videoIds: lofiVideos.map(v => v.id),  loop: true });
+    await DailySchedule.create({ channelId: retroCh.id, dayOfWeek: d, videoIds: retroVideos.map(v => v.id), loop: true });
   }
 
   console.log('Schedules creados');
-  console.log('\n── Seed completo ──────────────────────────');
-  console.log('Admin:   admin@streamtune.app   / Admin1234!');
-  console.log('Creator: lofi@streamtune.app    / Creator123!');
-  console.log('Viewer:  viewer@streamtune.app  / Viewer123!');
-  console.log('BD:      streamtune.db (en la carpeta del proyecto)');
+  console.log('');
+  console.log('Seed completo');
+  console.log('Admin:   admin@streamtune.app  / Admin1234!');
+  console.log('Creator: lofi@streamtune.app   / Creator123!');
+  console.log('Viewer:  viewer@streamtune.app / Viewer123!');
 
   await sequelize.close();
 }
 
-seed().catch(err => { console.error('Seed error:', err); process.exit(1); });
+seed().catch(err => { console.error('Seed error:', err.message); process.exit(1); });

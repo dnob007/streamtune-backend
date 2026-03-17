@@ -2,6 +2,27 @@
 const path = require('path');
 require('dotenv').config();
 
+// Railway inyecta DATABASE_URL automaticamente al agregar PostgreSQL
+// En desarrollo local sin DATABASE_URL, usa SQLite
+const isPostgres = !!process.env.DATABASE_URL;
+
+const dbConfig = isPostgres
+  ? {
+      dialect:  'postgres',
+      url:      process.env.DATABASE_URL,
+      dialectOptions: {
+        ssl: {
+          require:            true,
+          rejectUnauthorized: false,  // necesario para Railway/Heroku
+        },
+      },
+      pool: { max: 10, min: 2, acquire: 30000, idle: 10000 },
+    }
+  : {
+      dialect: 'sqlite',
+      storage: path.join(__dirname, '..', 'streamtune.db'),
+    };
+
 module.exports = {
   env:  process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 3000,
@@ -10,19 +31,11 @@ module.exports = {
     url: process.env.FRONTEND_URL || 'http://localhost:5173',
   },
 
-  db: {
-    // SQLite: archivo local, sin servidor, sin instalación
-    dialect:  'sqlite',
-    storage:  path.join(__dirname, '..', 'streamtune.db'),
-    // logging: false  ← descomenta para silenciar SQL en consola
-  },
+  db: dbConfig,
 
-  // Redis es OPCIONAL. Si no está instalado, el sistema usa
-  // un store en memoria (funciona igual para desarrollo)
   redis: {
     url:      process.env.REDIS_URL || null,
-    disabled: process.env.REDIS_DISABLED === 'true'
-              || !process.env.REDIS_URL,
+    disabled: !process.env.REDIS_URL,
   },
 
   jwt: {
@@ -46,8 +59,6 @@ module.exports = {
     driver:    process.env.STORAGE_DRIVER || 'local',
     localPath: path.join(__dirname, '..', 'uploads'),
     pricePerGb: parseFloat(process.env.STORAGE_PRICE_PER_GB_MONTH || '0.25'),
-    bucket:    process.env.AWS_BUCKET  || '',
-    region:    process.env.AWS_REGION  || 'us-east-1',
   },
 
   credits: {
@@ -57,4 +68,5 @@ module.exports = {
   },
 
   syncIntervalMs: 1000,
+  isPostgres,
 };

@@ -1,13 +1,58 @@
 'use strict';
-const path = require('path');
 const { Sequelize, DataTypes } = require('sequelize');
 const config = require('../../config');
 const logger = require('../utils/logger');
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: config.db.storage,
-  logging: false,   // silencia SQL en consola para mayor claridad
+// ── Conexión: PostgreSQL en producción, SQLite en desarrollo ─
+let sequelize;
+
+if (config.isPostgres) {
+  sequelize = new Sequelize(config.db.url, {
+    dialect:        'postgres',
+    dialectOptions: config.db.dialectOptions,
+    pool:           config.db.pool,
+    logging:        false,
+  });
+} else {
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: config.db.storage,
+    logging: false,
+  });
+}
+
+// ── Helpers para campos JSON (compatibles con ambos dialectos) ─
+// PostgreSQL usa JSONB nativo; SQLite usa TEXT serializado
+const jsonArrayField = (fieldName, defaultVal = []) => ({
+  type: config.isPostgres ? DataTypes.JSONB : DataTypes.TEXT,
+  defaultValue: config.isPostgres ? defaultVal : JSON.stringify(defaultVal),
+  ...(config.isPostgres ? {} : {
+    get() {
+      const v = this.getDataValue(fieldName);
+      if (!v) return defaultVal;
+      if (Array.isArray(v)) return v;
+      try { return JSON.parse(v); } catch { return defaultVal; }
+    },
+    set(val) {
+      this.setDataValue(fieldName, JSON.stringify(Array.isArray(val) ? val : defaultVal));
+    },
+  }),
+});
+
+const jsonObjectField = (fieldName, defaultVal = {}) => ({
+  type: config.isPostgres ? DataTypes.JSONB : DataTypes.TEXT,
+  defaultValue: config.isPostgres ? defaultVal : JSON.stringify(defaultVal),
+  ...(config.isPostgres ? {} : {
+    get() {
+      const v = this.getDataValue(fieldName);
+      if (!v) return defaultVal;
+      if (typeof v === 'object') return v;
+      try { return JSON.parse(v); } catch { return defaultVal; }
+    },
+    set(val) {
+      this.setDataValue(fieldName, JSON.stringify(val ?? defaultVal));
+    },
+  }),
 });
 
 // ── MODEL: User ──────────────────────────────────────────
@@ -18,9 +63,9 @@ const User = sequelize.define('User', {
   passwordHash:  { type: DataTypes.STRING,      allowNull: false },
   displayName:   { type: DataTypes.STRING(60) },
   country:       { type: DataTypes.STRING(2) },
-  role:          { type: DataTypes.STRING(10),  defaultValue: 'viewer' },
-  creditBalance: { type: DataTypes.INTEGER,     defaultValue: 0 },
-  isVerified:    { type: DataTypes.BOOLEAN,     defaultValue: false },
+  role:          { type: DataTypes.STRING(10), defaultValue: 'viewer' },
+  creditBalance: { type: DataTypes.INTEGER,    defaultValue: 0 },
+  isVerified:    { type: DataTypes.BOOLEAN,    defaultValue: false },
   avatarUrl:     { type: DataTypes.STRING },
   lastSeenAt:    { type: DataTypes.DATE },
 }, { tableName: 'users', underscored: true });
@@ -35,24 +80,12 @@ const Channel = sequelize.define('Channel', {
   descLong:    { type: DataTypes.TEXT },
   icon:        { type: DataTypes.STRING(8),  defaultValue: '🎵' },
   accentColor: { type: DataTypes.STRING(7),  defaultValue: '#7c5cfc' },
-  topics: {
-    type: DataTypes.TEXT,
-    defaultValue: '[]',
-    get() {
-      const v = this.getDataValue('topics');
-      if (!v) return [];
-      if (Array.isArray(v)) return v;
-      try { return JSON.parse(v); } catch { return []; }
-    },
-    set(val) {
-      this.setDataValue('topics', JSON.stringify(Array.isArray(val) ? val : []));
-    },
-  },
-  plan:             { type: DataTypes.STRING(10), defaultValue: 'free' },
-  status:           { type: DataTypes.STRING(10), defaultValue: 'offline' },
+  topics:      jsonArrayField('topics', []),
+  plan:        { type: DataTypes.STRING(10), defaultValue: 'free' },
+  status:      { type: DataTypes.STRING(10), defaultValue: 'offline' },
   followerCount:    { type: DataTypes.INTEGER, defaultValue: 0 },
   storageBytesUsed: { type: DataTypes.INTEGER, defaultValue: 0 },
-  timezone:         { type: DataTypes.STRING(50), defaultValue: 'America/Mexico_City' },
+  timezone:    { type: DataTypes.STRING(50), defaultValue: 'America/Mexico_City' },
 }, { tableName: 'channels', underscored: true });
 
 // ── MODEL: Video ─────────────────────────────────────────
@@ -78,22 +111,10 @@ const Video = sequelize.define('Video', {
 
 // ── MODEL: DailySchedule ─────────────────────────────────
 const DailySchedule = sequelize.define('DailySchedule', {
-  id:        { type: DataTypes.UUID,    defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  channelId: { type: DataTypes.UUID,    allowNull: false },
-  dayOfWeek: { type: DataTypes.INTEGER, allowNull: false },
-  videoIds: {
-    type: DataTypes.TEXT,
-    defaultValue: '[]',
-    get() {
-      const v = this.getDataValue('videoIds');
-      if (!v) return [];
-      if (Array.isArray(v)) return v;
-      try { return JSON.parse(v); } catch { return []; }
-    },
-    set(val) {
-      this.setDataValue('videoIds', JSON.stringify(Array.isArray(val) ? val : []));
-    },
-  },
+  id:           { type: DataTypes.UUID,    defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  channelId:    { type: DataTypes.UUID,    allowNull: false },
+  dayOfWeek:    { type: DataTypes.INTEGER, allowNull: false },
+  videoIds:     jsonArrayField('videoIds', []),
   shuffle:      { type: DataTypes.BOOLEAN, defaultValue: false },
   loop:         { type: DataTypes.BOOLEAN, defaultValue: true },
   crossfadeSec: { type: DataTypes.INTEGER, defaultValue: 0 },
@@ -113,19 +134,7 @@ const CreditTransaction = sequelize.define('CreditTransaction', {
   type:            { type: DataTypes.STRING(10), allowNull: false },
   stripePaymentId: { type: DataTypes.STRING },
   usdAmount:       { type: DataTypes.FLOAT },
-  meta: {
-    type: DataTypes.TEXT,
-    defaultValue: '{}',
-    get() {
-      const v = this.getDataValue('meta');
-      if (!v) return {};
-      if (typeof v === 'object') return v;
-      try { return JSON.parse(v); } catch { return {}; }
-    },
-    set(val) {
-      this.setDataValue('meta', JSON.stringify(val ?? {}));
-    },
-  },
+  meta:            jsonObjectField('meta', {}),
 }, { tableName: 'credit_transactions', underscored: true });
 
 // ── MODEL: Follow ────────────────────────────────────────
@@ -164,12 +173,11 @@ User.hasMany(CreditTransaction, { foreignKey: 'toUserId',   as: 'received'});
 async function connectDB() {
   await sequelize.authenticate();
 
-  // sync({ force: false }) solo CREA tablas que no existen.
-  // NUNCA borra ni modifica tablas existentes con datos.
-  // Es la opcion segura para desarrollo con datos ya cargados.
+  // sync({ force: false }) crea tablas que no existen, no toca las que ya tienen datos
   await sequelize.sync({ force: false });
 
-  logger.info('SQLite conectado -> ' + config.db.storage);
+  const tipo = config.isPostgres ? 'PostgreSQL' : 'SQLite';
+  logger.info(`${tipo} conectado`);
 }
 
 module.exports = {

@@ -1,19 +1,16 @@
 'use strict';
-/**
- * Para SQLite no se necesita migración manual.
- * Sequelize.sync({ alter: true }) crea/actualiza las tablas
- * automáticamente al arrancar el servidor.
- *
- * Este script solo verifica la conexión.
- */
 require('dotenv').config();
 const { sequelize } = require('../models');
+const config = require('../../config');
 
 async function migrate() {
-  console.log('SQLite: sincronizando tablas...');
-  await sequelize.sync({ alter: true });
-  console.log('✓ Tablas sincronizadas en:', require('../../config').db.storage);
+  const tipo = config.isPostgres ? 'PostgreSQL' : 'SQLite';
+  console.log(`Conectando a ${tipo}...`);
+  await sequelize.authenticate();
+  console.log('Sincronizando tablas...');
+  await sequelize.sync({ force: false });
+  console.log('Tablas sincronizadas correctamente');
   await sequelize.close();
 }
 
-migrate().catch(err => { console.error(err); process.exit(1); });
+migrate().catch(err => { console.error(err.message); process.exit(1); });
