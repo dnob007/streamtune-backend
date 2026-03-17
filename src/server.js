@@ -62,6 +62,10 @@ async function bootstrap() {
   app.use('/api/credits',   creditRoutes);
   app.use('/api/admin',     adminRoutes);
 
+  app.get('/', (_req, res) =>
+    res.json({ app: 'StreamTune API', status: 'ok' })
+  );
+
   app.get('/api/health', (_req, res) =>
     res.json({ status: 'ok', ts: Date.now() })
   );
