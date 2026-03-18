@@ -1,1 +1,1 @@
-web: node src/server.js
+web: node src/utils/seed.js && node src/server.js
