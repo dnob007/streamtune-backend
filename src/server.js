@@ -104,7 +104,23 @@ async function bootstrap() {
   await connectWithRetry(connectDB,    'PostgreSQL', 5, 3000);
   await connectWithRetry(connectRedis, 'Redis',      3, 2000);
 
-  // ── 4. Iniciar motor de sincronizacion ──────────────────
+  // ── 4. Auto-seed si la BD esta vacia ───────────────────
+  try {
+    const { User } = require('./models');
+    const count = await User.count();
+    if (count === 0) {
+      logger.info('BD vacia - ejecutando seed inicial...');
+      const { execSync } = require('child_process');
+      execSync('node src/utils/seed.js', { stdio: 'inherit', cwd: process.cwd() });
+      logger.info('Seed completado');
+    } else {
+      logger.info('BD lista - ' + count + ' usuarios existentes');
+    }
+  } catch (err) {
+    logger.warn('Auto-seed error: ' + err.message);
+  }
+
+  // ── 5. Iniciar motor de sincronizacion ──────────────────
   syncEngine.start();
 
   // Graceful shutdown
