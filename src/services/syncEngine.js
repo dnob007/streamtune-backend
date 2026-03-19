@@ -60,6 +60,10 @@ async function _tick() {
     if (!sched.videos.length || sched.totalSec === 0) continue;
 
     const state = _computeState(sched, nowSec);
+    // Debug: log every 30s to confirm engine is running
+    if (nowSec % 30 === 0) {
+      logger.debug(`SyncEngine: canal ${channelId.slice(0,8)} video ${state.videoIndex+1}/${state.totalVideos} frame ${Math.floor(state.frameAt)}s ytId=${state.ytId}`);
+    }
 
     // Persist state to Redis (clients also use this to sync on connect)
     await setChannelState(channelId, state);
@@ -154,15 +158,19 @@ async function _refreshSchedules() {
         continue;
       }
 
-      // Load video details
+      // Load video details — use Op.in for PostgreSQL compatibility
+      const { Op } = require('sequelize');
+      const videoIds = Array.isArray(sched.videoIds) ? sched.videoIds : [];
+      if (!videoIds.length) { scheduleCache.delete(cid); continue; }
+
       const videos = await Video.findAll({
-        where: { id: sched.videoIds, isActive: true },
+        where: { id: { [Op.in]: videoIds }, isActive: true },
         attributes: ['id', 'ytId', 'fileKey', 'ytTitle', 'ytChannel',
                      'ytDuration', 'fileDuration', 'title'],
       });
 
       // Preserve order from videoIds array
-      const ordered = sched.videoIds
+      const ordered = videoIds
         .map(id => videos.find(v => v.id === id))
         .filter(Boolean)
         .map(v => ({
