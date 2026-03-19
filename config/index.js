@@ -13,10 +13,19 @@ const dbConfig = isPostgres
       dialectOptions: {
         ssl: {
           require:            true,
-          rejectUnauthorized: false,  // necesario para Railway/Heroku
+          rejectUnauthorized: false,
         },
+        // Keep connection alive — prevents ECONNRESET on Railway
+        keepAlive:        true,
+        keepAliveInitialDelayMillis: 10000,
       },
-      pool: { max: 10, min: 2, acquire: 30000, idle: 10000 },
+      pool: {
+        max:     5,
+        min:     1,
+        acquire: 60000,
+        idle:    10000,
+        evict:   10000,
+      },
     }
   : {
       dialect: 'sqlite',

@@ -43,6 +43,9 @@ async function bootstrap() {
   // ── 1. Express app ──────────────────────────────────────
   const app = express();
 
+  // Trust Railway/Heroku reverse proxy — required for rate limiter and WebSocket
+  app.set('trust proxy', 1);
+
   app.use(helmet());
   app.use(compression());
 
